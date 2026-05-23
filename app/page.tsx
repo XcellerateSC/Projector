@@ -1,17 +1,14 @@
 import {
-  ArrowRight,
   BriefcaseBusiness,
   CheckCircle2,
   Clock3,
-  KeyRound,
-  LockKeyhole,
-  Mail,
   ShieldCheck
 } from "lucide-react";
+import { LoginForm } from "./login-form";
 
 const pipelineItems = [
   { label: "Auth shell", state: "Ready" },
-  { label: "Supabase", state: "Next" },
+  { label: "Supabase", state: "Connected" },
   { label: "Vercel", state: "Pipeline" }
 ];
 
@@ -42,9 +39,9 @@ export default function LoginPage() {
           <div className="panel-header">
             <div>
               <p className="section-kicker">Deployment path</p>
-              <h2>First visual checkpoint</h2>
+              <h2>First auth checkpoint</h2>
             </div>
-            <span className="status-pill">UI only</span>
+            <span className="status-pill">Demo auth</span>
           </div>
 
           <div className="pipeline-list">
@@ -74,58 +71,7 @@ export default function LoginPage() {
       </section>
 
       <section className="login-panel" aria-label="Login">
-        <div className="login-card">
-          <div className="login-header">
-            <div className="login-icon">
-              <LockKeyhole size={20} />
-            </div>
-            <div>
-              <p className="section-kicker">Secure access</p>
-              <h2>Anmelden</h2>
-            </div>
-          </div>
-
-          <form className="login-form">
-            <label>
-              <span>E-Mail</span>
-              <div className="input-frame">
-                <Mail size={16} />
-                <input
-                  type="email"
-                  placeholder="name@xcellerate.ch"
-                  aria-label="E-Mail"
-                />
-              </div>
-            </label>
-
-            <label>
-              <span>Passwort</span>
-              <div className="input-frame">
-                <KeyRound size={16} />
-                <input
-                  type="password"
-                  placeholder="Passwort"
-                  aria-label="Passwort"
-                />
-              </div>
-            </label>
-
-            <button className="primary-button" type="button">
-              Einloggen
-              <ArrowRight size={16} />
-            </button>
-          </form>
-
-          <div className="self-service">
-            <button type="button">Passwort vergessen</button>
-            <button type="button">Zugang anfragen</button>
-          </div>
-
-          <div className="security-note">
-            <ShieldCheck size={16} />
-            <span>Supabase Auth wird im nächsten funktionalen Schritt angebunden.</span>
-          </div>
-        </div>
+        <LoginForm />
 
         <div className="system-strip" aria-label="System hints">
           <div>
