@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   LogOut,
   ShieldCheck,
+  UserRoundCog,
   UsersRound
 } from "lucide-react";
 import {
@@ -103,11 +104,38 @@ const roleSummaries: Record<SystemRole, string[]> = {
   ]
 };
 
+const demoUsers = [
+  {
+    email: "paula.portfolio@xcellerate-demo.ch",
+    label: "Paula Portfolio",
+    role: "Portfolio Manager"
+  },
+  {
+    email: "peter.project@xcellerate-demo.ch",
+    label: "Peter Project",
+    role: "Project Manager"
+  },
+  {
+    email: "carla.consultant@xcellerate-demo.ch",
+    label: "Carla Consultant",
+    role: "Consultant"
+  },
+  {
+    email: "chris.consultant@xcellerate-demo.ch",
+    label: "Chris Consultant",
+    role: "Consultant"
+  }
+];
+
 export default function DashboardPage() {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
+  const [isDemoSwitcherOpen, setIsDemoSwitcherOpen] = useState(false);
+  const [selectedDemoEmail, setSelectedDemoEmail] = useState(demoUsers[0].email);
+  const [isSwitchingUser, setIsSwitchingUser] = useState(false);
+  const [demoSwitchError, setDemoSwitchError] = useState<string | null>(null);
 
   const visibleNavItems = useMemo(() => {
     if (!profile) {
@@ -165,6 +193,38 @@ export default function DashboardPage() {
     router.replace("/");
   }
 
+  async function handleDemoUserSwitch() {
+    setDemoSwitchError(null);
+
+    const supabase = getSupabaseBrowserClient();
+    const demoPassword = process.env.NEXT_PUBLIC_DEMO_USER_PASSWORD;
+
+    if (!supabase) {
+      setDemoSwitchError("Supabase ist noch nicht konfiguriert.");
+      return;
+    }
+
+    if (!demoPassword) {
+      setDemoSwitchError("Demo-Passwort fehlt in den Environment Variables.");
+      return;
+    }
+
+    setIsSwitchingUser(true);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: selectedDemoEmail,
+      password: demoPassword
+    });
+
+    if (error) {
+      setIsSwitchingUser(false);
+      setDemoSwitchError("Demo-Wechsel fehlgeschlagen. Passwort oder User prüfen.");
+      return;
+    }
+
+    window.location.href = "/dashboard";
+  }
+
   if (isLoading) {
     return (
       <main className="dashboard-loading">
@@ -212,15 +272,65 @@ export default function DashboardPage() {
             })}
           </div>
         </div>
-        <button
-          className="sidebar-item sidebar-logout"
-          title="Logout"
-          type="button"
-          onClick={handleLogout}
-        >
-          <LogOut size={17} />
-          <span>Logout</span>
-        </button>
+        <div className="sidebar-bottom">
+          <div className="demo-switcher">
+            <button
+              className="sidebar-item"
+              title="Demo user wechseln"
+              type="button"
+              onClick={() => setIsDemoSwitcherOpen((isOpen) => !isOpen)}
+            >
+              <UserRoundCog size={17} />
+              <span>Demo</span>
+            </button>
+
+            {isDemoSwitcherOpen ? (
+              <div className="demo-switcher-panel">
+                <div className="demo-switcher-header">
+                  <span>Demo Funktion</span>
+                  <strong>User wechseln</strong>
+                </div>
+
+                <label className="demo-user-select">
+                  <span>Demo User</span>
+                  <select
+                    value={selectedDemoEmail}
+                    onChange={(event) => setSelectedDemoEmail(event.target.value)}
+                  >
+                    {demoUsers.map((user) => (
+                      <option key={user.email} value={user.email}>
+                        {user.label} - {user.role}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {demoSwitchError ? (
+                  <p className="demo-switch-error">{demoSwitchError}</p>
+                ) : null}
+
+                <button
+                  className="demo-switch-button"
+                  type="button"
+                  onClick={handleDemoUserSwitch}
+                  disabled={isSwitchingUser}
+                >
+                  {isSwitchingUser ? "Wechsel läuft" : "Als User öffnen"}
+                </button>
+              </div>
+            ) : null}
+          </div>
+
+          <button
+            className="sidebar-item sidebar-logout"
+            title="Logout"
+            type="button"
+            onClick={handleLogout}
+          >
+            <LogOut size={17} />
+            <span>Logout</span>
+          </button>
+        </div>
       </nav>
 
       <section className="dashboard-main">

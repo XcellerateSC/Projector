@@ -134,9 +134,12 @@ Lokal:
 ```txt
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_DEMO_USER_PASSWORD=
 ```
 
 Diese Werte gehören in `.env.local`. Die Vorlage liegt in `.env.example`.
+
+`NEXT_PUBLIC_DEMO_USER_PASSWORD` ist nur für die Demo-Switch-Funktion gedacht. Alle vier Demo-User müssen dafür dasselbe Demo-Passwort haben. Für echte produktive Auth-Flows wird diese Variable später wieder entfernt.
 
 Vercel:
 
@@ -144,8 +147,9 @@ Vercel:
 2. `Settings` -> `Environment Variables`.
 3. `NEXT_PUBLIC_SUPABASE_URL` setzen.
 4. `NEXT_PUBLIC_SUPABASE_ANON_KEY` setzen.
-5. Für Production, Preview und Development aktivieren.
-6. Deployment neu starten.
+5. `NEXT_PUBLIC_DEMO_USER_PASSWORD` setzen, solange die Demo-Switch-Funktion aktiv ist.
+6. Für Production und Preview aktivieren.
+7. Deployment neu starten.
 
 ## Aktueller Scope
 
@@ -157,6 +161,7 @@ Die App nutzt diese Daten bereits für:
 - Weiterleitung auf `/dashboard`
 - Laden des aktuellen `profiles`-Datensatzes
 - rollenbasierte Demo-Navigation
+- Demo-Wechsel zwischen den vier vorbereiteten Demo-Usern
 
 Noch nicht enthalten:
 
