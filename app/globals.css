@@ -466,12 +466,14 @@ button:disabled {
 }
 
 .app-sidebar {
+  position: relative;
+  z-index: 30;
   display: flex;
   width: 64px;
   flex: 0 0 64px;
   flex-direction: column;
   justify-content: space-between;
-  overflow: hidden;
+  overflow: visible;
   background: var(--app-sidebar);
   color: white;
   box-shadow: 0 12px 28px rgb(15 23 42 / 0.18);
@@ -507,6 +509,7 @@ button:disabled {
   border-left: 3px solid transparent;
   background: transparent;
   color: rgb(255 255 255 / 0.8);
+  outline: 0;
   transition:
     background 0.18s ease,
     color 0.18s ease,
@@ -550,7 +553,7 @@ button:disabled {
 .demo-switcher-panel {
   position: absolute;
   bottom: 4px;
-  left: 72px;
+  left: calc(100% + 8px);
   z-index: 20;
   display: grid;
   width: 300px;
