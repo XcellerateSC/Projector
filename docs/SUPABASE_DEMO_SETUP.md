@@ -19,20 +19,21 @@ Die Demo nutzt die Rollen aus dem Product Design:
 | `project_lead` | Projektmanager bzw. Projektleiter |
 | `employee` | Consultant bzw. normaler Mitarbeitender |
 
-## Migration Ausführen
+## Migrationen Ausführen
 
-Die SQL-Migration liegt unter:
+Die SQL-Migrationen liegen unter:
 
 ```txt
 supabase/migrations/202605230001_initial_auth_profiles.sql
+supabase/migrations/202605240001_projects_staffing_timesheets.sql
 ```
 
-Für den ersten manuellen Durchstich kann sie im Supabase Dashboard ausgeführt werden:
+Für den ersten manuellen Durchstich können sie im Supabase Dashboard ausgeführt werden:
 
 1. Supabase Projekt öffnen.
 2. SQL Editor öffnen.
-3. Inhalt der Migration einfügen.
-4. Query ausführen.
+3. Inhalt der ersten Migration einfügen und ausführen.
+4. Danach Inhalt der zweiten Migration einfügen und ausführen.
 
 Später kann dieselbe Migration über die Supabase CLI versioniert angewendet werden.
 
@@ -151,9 +152,19 @@ Vercel:
 6. Für Production und Preview aktivieren.
 7. Deployment neu starten.
 
-## Aktueller Scope
+## Datenmodell Scope
 
-Diese erste Migration bildet nur Auth-Profile und Rollen ab.
+Die erste Migration bildet Auth-Profile und Rollen ab. Die zweite Migration erweitert die Demo um das fachliche Grundschema:
+
+- Portfolios
+- Kunden
+- Projekte
+- Project Charter
+- Projektpositionen
+- Staffing Assignments
+- interne Zeitkonten
+- wöchentliche Timesheets
+- Zeiteinträge
 
 Die App nutzt diese Daten bereits für:
 
@@ -162,14 +173,11 @@ Die App nutzt diese Daten bereits für:
 - Laden des aktuellen `profiles`-Datensatzes
 - rollenbasierte Demo-Navigation
 - Demo-Wechsel zwischen den vier vorbereiteten Demo-Usern
+- Projektliste, Charter-Editor und Staffing über `/projects`
+- wöchentliche Zeiterfassung über `/timesheets`
 
-Noch nicht enthalten:
+Noch bewusst ausgespart:
 
-- Portfolios
-- Projekte
-- Projektpositionen
-- Assignments
-- Timesheets
+- Financials
 - Statusberichte
-
-Diese Tabellen folgen im nächsten Schema-Slice, sobald die Demo-Login-Verbindung steht.
+- produktiver Passwort-Reset und User-Selfservice

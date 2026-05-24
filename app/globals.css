@@ -1096,6 +1096,14 @@ button:disabled {
   background: var(--app-error);
 }
 
+.neutral {
+  background: var(--slate-300);
+}
+
+.current {
+  background: var(--app-primary);
+}
+
 .people-title {
   display: flex;
   align-items: center;
@@ -1269,6 +1277,952 @@ button:disabled {
   line-height: 1.55;
 }
 
+.projects-master {
+  width: 336px;
+  flex-basis: 336px;
+}
+
+.project-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 8px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 9px 10px;
+  background: transparent;
+  text-align: left;
+}
+
+.project-row:hover {
+  background: var(--slate-50);
+}
+
+.project-row.active {
+  border-color: rgb(8 108 150 / 0.2);
+  background: var(--app-primary-light);
+}
+
+.project-row.active::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--app-accent);
+  content: "";
+}
+
+.project-row strong,
+.project-row span,
+.project-row small {
+  display: block;
+}
+
+.project-row strong {
+  color: var(--slate-800);
+  font-size: 13px;
+}
+
+.project-row span {
+  margin-top: 2px;
+  color: var(--slate-500);
+  font-size: 11px;
+}
+
+.project-row small {
+  margin-top: 3px;
+  color: var(--slate-400);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.project-row i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+}
+
+.project-detail-header {
+  padding-bottom: 14px;
+}
+
+.project-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--slate-200);
+  padding: 8px 18px;
+  background: white;
+}
+
+.project-tab {
+  min-width: 92px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--slate-500);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.project-tab:hover {
+  background: var(--slate-50);
+  color: var(--slate-800);
+}
+
+.project-tab.active {
+  border-color: rgb(8 108 150 / 0.14);
+  background: var(--app-primary-light);
+  color: var(--app-main);
+}
+
+.project-detail-content {
+  max-width: 1180px;
+}
+
+.project-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
+  gap: 16px;
+}
+
+.project-facts-panel {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.project-fact {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--slate-100);
+  border-radius: 6px;
+  padding: 9px 10px;
+  background: var(--slate-50);
+  color: var(--slate-700);
+  font-size: 13px;
+}
+
+.project-fact svg {
+  color: var(--app-main);
+}
+
+.milestone-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.milestone-row {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--slate-100);
+  border-radius: 6px;
+  padding: 10px 11px;
+  background: var(--slate-50);
+}
+
+.milestone-row svg {
+  color: var(--app-main);
+}
+
+.milestone-row strong,
+.milestone-row span,
+.milestone-row i {
+  display: block;
+}
+
+.milestone-row strong {
+  color: var(--slate-800);
+  font-size: 13px;
+}
+
+.milestone-row span {
+  margin-top: 2px;
+  color: var(--slate-500);
+  font-size: 11px;
+}
+
+.milestone-row i {
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: white;
+  color: var(--slate-500);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.charter-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.charter-grid > div {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 10px;
+  border: 1px solid var(--slate-100);
+  border-radius: 6px;
+  padding: 12px;
+  background: var(--slate-50);
+}
+
+.charter-grid svg {
+  color: var(--app-main);
+}
+
+.charter-grid strong {
+  display: block;
+  color: var(--slate-800);
+  font-size: 13px;
+}
+
+.charter-grid p {
+  margin: 5px 0 0;
+  color: var(--slate-600);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.subtle-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  border: 1px solid var(--slate-200);
+  border-radius: 6px;
+  padding: 0 9px;
+  background: white;
+  color: var(--slate-700);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.subtle-action:hover {
+  background: var(--slate-50);
+}
+
+.staffing-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgb(217 119 6 / 0.18);
+  border-radius: 6px;
+  padding: 8px 9px;
+  background: rgb(217 119 6 / 0.08);
+  color: var(--app-warning);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.staffing-table {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  margin-top: 14px;
+}
+
+.staffing-table-head,
+.staffing-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.3fr) 140px 92px minmax(260px, 1.4fr) 120px;
+  align-items: stretch;
+}
+
+.staffing-table-head {
+  background: var(--slate-50);
+  border-bottom: 1px solid var(--slate-200);
+}
+
+.staffing-table-head span {
+  padding: 9px 10px;
+  color: var(--slate-400);
+  font-size: 10px;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.staffing-row {
+  min-height: 74px;
+  background: white;
+}
+
+.staffing-row + .staffing-row {
+  border-top: 1px solid var(--slate-100);
+}
+
+.staffing-position,
+.staffing-period,
+.staffing-plan,
+.staffing-assignments,
+.staffing-state {
+  min-width: 0;
+  padding: 9px 10px;
+}
+
+.staffing-position {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+}
+
+.staffing-position strong,
+.staffing-position span,
+.staffing-period span,
+.staffing-plan span {
+  display: block;
+}
+
+.staffing-position strong {
+  color: var(--slate-900);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.staffing-position span {
+  color: var(--slate-500);
+  font-size: 11px;
+  font-weight: 550;
+  text-transform: uppercase;
+}
+
+.staffing-skillline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.staffing-skillline small {
+  border: 1px solid rgb(8 108 150 / 0.12);
+  border-radius: 999px;
+  padding: 3px 6px;
+  background: var(--app-primary-light);
+  color: var(--app-main);
+  font-size: 10px;
+  font-weight: 550;
+}
+
+.staffing-period {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+}
+
+.staffing-period span {
+  color: var(--slate-700);
+  font-size: 12px;
+  font-weight: 450;
+}
+
+.staffing-plan {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+}
+
+.staffing-plan span {
+  color: var(--slate-900);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.staffing-assignments {
+  display: grid;
+  align-content: center;
+  gap: 5px;
+}
+
+.staffing-assignment {
+  display: grid;
+  grid-template-columns: minmax(92px, 1fr) minmax(116px, 1.2fr) 48px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--slate-100);
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: var(--slate-50);
+}
+
+.staffing-assignment strong,
+.staffing-assignment span,
+.staffing-assignment i {
+  display: block;
+  font-size: 11px;
+}
+
+.staffing-assignment strong {
+  color: var(--slate-800);
+  font-weight: 600;
+}
+
+.staffing-assignment span {
+  color: var(--slate-500);
+}
+
+.staffing-assignment i {
+  color: var(--slate-900);
+  font-style: normal;
+  font-weight: 600;
+  text-align: right;
+}
+
+.assignment-add-button {
+  display: inline-flex;
+  width: max-content;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--slate-200);
+  border-radius: 6px;
+  padding: 5px 8px;
+  background: white;
+  color: var(--app-primary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.assignment-add-button:hover {
+  border-color: rgb(8 108 150 / 0.24);
+  background: var(--app-primary-light);
+  color: var(--app-main);
+}
+
+.staffing-state {
+  display: grid;
+  align-content: center;
+}
+
+.staffing-state i {
+  width: max-content;
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: var(--slate-50);
+  color: var(--slate-600);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.timesheet-review-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.timesheet-review-year {
+  min-width: 96px;
+}
+
+.timesheet-review-table {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  margin-top: 14px;
+  background: white;
+}
+
+.timesheet-review-head,
+.timesheet-review-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 1.05fr) minmax(150px, 0.95fr) 74px 74px 92px minmax(180px, 1.2fr);
+  align-items: stretch;
+}
+
+.timesheet-review-head {
+  border-bottom: 1px solid var(--slate-200);
+  background: var(--slate-50);
+}
+
+.timesheet-review-head span {
+  padding: 9px 10px;
+  color: var(--slate-400);
+  font-size: 10px;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.timesheet-review-row {
+  min-height: 48px;
+}
+
+.timesheet-review-group + .timesheet-review-group {
+  border-top: 1px solid var(--slate-200);
+}
+
+.timesheet-review-group .timesheet-review-row + .timesheet-review-row {
+  border-top: 1px solid var(--slate-100);
+}
+
+.review-role,
+.review-employee,
+.review-number,
+.review-status,
+.review-note {
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.review-role {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+}
+
+.review-role strong {
+  overflow: hidden;
+  color: var(--slate-800);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.review-employee,
+.review-number,
+.review-note {
+  display: grid;
+  align-content: center;
+  overflow: hidden;
+  color: var(--slate-600);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.review-number {
+  color: var(--slate-800);
+  font-weight: 600;
+  text-align: right;
+}
+
+.review-status {
+  display: grid;
+  align-content: center;
+}
+
+.review-status i {
+  width: max-content;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.review-status i.missing {
+  background: rgb(185 28 28 / 0.08);
+  color: var(--app-error);
+}
+
+.review-status i.open {
+  background: rgb(217 119 6 / 0.1);
+  color: var(--app-warning);
+}
+
+.review-status i.submitted {
+  background: rgb(21 128 61 / 0.1);
+  color: var(--app-success);
+}
+
+.timesheet-review-empty {
+  padding: 18px;
+  color: var(--slate-500);
+  font-size: 13px;
+}
+
+.timesheet-review-week {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--slate-100);
+  padding: 9px 10px;
+  background: rgb(248 250 252 / 0.85);
+}
+
+.timesheet-review-week > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.timesheet-review-week > div:last-child {
+  justify-content: flex-end;
+}
+
+.timesheet-review-week strong {
+  color: var(--slate-800);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.timesheet-review-week span {
+  color: var(--slate-500);
+  font-size: 11px;
+  font-weight: 550;
+}
+
+.timesheet-master {
+  width: 292px;
+  flex-basis: 292px;
+}
+
+.timesheet-master-header {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+}
+
+.timesheet-master-header > div {
+  min-width: 0;
+}
+
+.timesheet-master-header > div span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.year-select {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+}
+
+.year-select span {
+  color: var(--slate-400);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.year-select select {
+  height: 28px;
+  border: 1px solid var(--slate-200);
+  border-radius: 6px;
+  padding: 0 7px;
+  background: white;
+  color: var(--slate-700);
+  font-size: 11px;
+  outline: 0;
+}
+
+.year-select select:focus {
+  border-color: var(--app-primary);
+  box-shadow: 0 0 0 1px var(--app-primary);
+}
+
+.timesheet-week-list {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.week-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 8px 9px;
+  background: transparent;
+  text-align: left;
+}
+
+.week-row:hover {
+  background: var(--slate-50);
+}
+
+.week-row.active {
+  border-color: rgb(8 108 150 / 0.2);
+  background: var(--app-primary-light);
+}
+
+.week-row.active::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--app-accent);
+  content: "";
+}
+
+.week-row strong,
+.week-row span {
+  display: block;
+}
+
+.week-row strong {
+  color: var(--slate-800);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.week-row span {
+  margin-top: 2px;
+  color: var(--slate-500);
+  font-size: 11px;
+}
+
+.week-row-meta {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+}
+
+.week-row-meta i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+}
+
+.timesheet-detail-content {
+  max-width: 1180px;
+}
+
+.timesheet-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.timesheet-grid {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  margin-top: 14px;
+}
+
+.add-internal-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.add-internal-control select {
+  height: 30px;
+  min-width: 190px;
+  border: 1px solid var(--slate-200);
+  border-radius: 6px;
+  padding: 0 8px;
+  background: white;
+  color: var(--slate-700);
+  font-size: 12px;
+  outline: 0;
+}
+
+.add-internal-control select:focus {
+  border-color: var(--app-primary);
+  box-shadow: 0 0 0 1px var(--app-primary);
+}
+
+.timesheet-grid-head,
+.timesheet-grid-row {
+  display: grid;
+  grid-template-columns: 92px minmax(230px, 1.1fr) 82px 86px minmax(260px, 1.3fr);
+  align-items: stretch;
+}
+
+.timesheet-grid-head {
+  border-bottom: 1px solid var(--slate-200);
+  background: var(--slate-50);
+}
+
+.timesheet-grid-head span {
+  padding: 9px 10px;
+  color: var(--slate-400);
+  font-size: 10px;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.timesheet-grid-row {
+  min-height: 46px;
+  background: white;
+}
+
+.timesheet-grid-row + .timesheet-grid-row {
+  border-top: 1px solid var(--slate-100);
+}
+
+.entry-type,
+.entry-assignment,
+.entry-planned,
+.entry-hours,
+.entry-description {
+  min-width: 0;
+  padding: 7px 10px;
+}
+
+.entry-type {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--slate-700);
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.entry-type i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+}
+
+.entry-assignment {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+}
+
+.entry-assignment strong,
+.entry-assignment span {
+  display: block;
+}
+
+.entry-assignment strong {
+  overflow: hidden;
+  color: var(--slate-800);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entry-assignment span {
+  overflow: hidden;
+  color: var(--slate-500);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entry-planned {
+  display: grid;
+  align-content: center;
+  color: var(--slate-600);
+  font-size: 12px;
+}
+
+.entry-hours,
+.entry-description {
+  display: grid;
+  align-items: center;
+}
+
+.entry-hours input,
+.entry-description input {
+  width: 100%;
+  height: 30px;
+  border: 1px solid var(--slate-200);
+  border-radius: 6px;
+  background: var(--slate-50);
+  color: var(--slate-800);
+  font-size: 12px;
+  outline: 0;
+}
+
+.entry-hours input {
+  padding: 0 7px;
+  text-align: right;
+}
+
+.entry-description input {
+  padding: 0 9px;
+}
+
+.entry-hours input:focus,
+.entry-description input:focus {
+  border-color: var(--app-primary);
+  background: white;
+  box-shadow: 0 0 0 1px var(--app-primary);
+}
+
+.timesheet-footer-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: white;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+}
+
+.timesheet-completeness {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.timesheet-completeness svg {
+  color: var(--app-success);
+}
+
+.timesheet-completeness strong,
+.timesheet-completeness span {
+  display: block;
+}
+
+.timesheet-completeness strong {
+  color: var(--slate-800);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.timesheet-completeness span {
+  margin-top: 2px;
+  color: var(--slate-500);
+  font-size: 11px;
+}
+
+.timesheet-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.submit-timesheet-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  border: 1px solid var(--app-accent);
+  border-radius: 6px;
+  padding: 0 10px;
+  background: var(--app-accent);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.submit-timesheet-button:hover {
+  background: #a91b11;
+}
+
+.submit-timesheet-button:disabled {
+  border-color: var(--slate-200);
+  background: var(--slate-100);
+  color: var(--slate-400);
+}
+
 @media (max-width: 980px) {
   .app-shell {
     overflow: auto;
@@ -1290,5 +2244,14 @@ button:disabled {
 
   .people-profile-grid {
     grid-template-columns: 1fr;
+  }
+
+  .project-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .timesheet-grid-head,
+  .timesheet-grid-row {
+    grid-template-columns: 82px minmax(180px, 1fr) 72px 78px minmax(180px, 1fr);
   }
 }
