@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   BriefcaseBusiness,
@@ -11,11 +11,13 @@ import {
   FileText,
   Flag,
   MapPin,
+  Pencil,
   Plus,
   Save,
   Search,
   Target,
-  UserRound
+  UserRound,
+  X
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { getSupabaseBrowserClient, type Profile } from "@/lib/supabase/client";
@@ -91,6 +93,20 @@ type ProjectTimesheetRow = {
   status: "missing" | "open" | "submitted";
   note: string;
 };
+type PositionDraft = {
+  title: string;
+  professionalGrade: string;
+  startDate: string;
+  endDate: string;
+  plannedAllocationPercent: string;
+  requiredSkills: string;
+};
+type AssignmentDraft = {
+  employeeId: string;
+  startDate: string;
+  endDate: string;
+  allocationPercent: string;
+};
 
 const healthClass: Record<ProjectHealth, string> = {
   green: "success",
@@ -106,6 +122,22 @@ const tabs: Array<{ id: ProjectTab; label: string }> = [
 ];
 
 const availableTimesheetYears = [2025, 2026, 2027];
+
+const emptyPositionDraft: PositionDraft = {
+  title: "",
+  professionalGrade: "Consultant",
+  startDate: "",
+  endDate: "",
+  plannedAllocationPercent: "50",
+  requiredSkills: ""
+};
+
+const emptyAssignmentDraft: AssignmentDraft = {
+  employeeId: "",
+  startDate: "",
+  endDate: "",
+  allocationPercent: "50"
+};
 
 function formatDate(date: string) {
   return new Date(`${date}T00:00:00`).toLocaleDateString("en-GB", {
@@ -140,6 +172,8 @@ function createProjectWeeks(year: number, project: ProjectRecord | undefined) {
     return [];
   }
 
+  const todayKey = toDateKey(new Date());
+
   return Array.from({ length: 53 }, (_, index) => {
     const weekNumber = index + 1;
     const start = getIsoWeekStart(year, weekNumber);
@@ -151,7 +185,12 @@ function createProjectWeeks(year: number, project: ProjectRecord | undefined) {
       endDate: toDateKey(end),
       label: `KW ${String(weekNumber).padStart(2, "0")}`
     };
-  }).filter((week) => week.endDate >= project.start_date && week.startDate <= project.end_date);
+  }).filter(
+    (week) =>
+      week.endDate >= project.start_date &&
+      week.startDate <= project.end_date &&
+      week.startDate <= todayKey
+  );
 }
 
 function isAssignmentActiveInWeek(assignment: Assignment, weekStartDate: string) {
@@ -160,6 +199,32 @@ function isAssignmentActiveInWeek(assignment: Assignment, weekStartDate: string)
   end.setUTCDate(start.getUTCDate() + 6);
 
   return assignment.start_date <= toDateKey(end) && assignment.end_date >= weekStartDate;
+}
+
+function rangesOverlap(
+  firstStartDate: string,
+  firstEndDate: string,
+  secondStartDate: string,
+  secondEndDate: string
+) {
+  return firstStartDate <= secondEndDate && secondStartDate <= firstEndDate;
+}
+
+function normalizePercent(value: string, fallback: number) {
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? fallback : parsed;
+}
+
+function getStaffingStatus(assignedPercent: number, plannedPercent: number): PositionStatus {
+  if (assignedPercent <= 0) {
+    return "open";
+  }
+
+  return assignedPercent >= plannedPercent ? "staffed" : "partially_staffed";
+}
+
+function isRunningStaffingPeriod(startDate: string, endDate: string, todayKey: string) {
+  return startDate <= todayKey && endDate >= todayKey;
 }
 
 export default function ProjectsPage() {
@@ -178,6 +243,12 @@ export default function ProjectsPage() {
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
+  const [isPositionModalOpen, setIsPositionModalOpen] = useState(false);
+  const [assignmentModalPositionId, setAssignmentModalPositionId] = useState<string | null>(null);
+  const [editingPositionId, setEditingPositionId] = useState<string | null>(null);
+  const [editingAssignmentId, setEditingAssignmentId] = useState<string | null>(null);
+  const [positionDraft, setPositionDraft] = useState<PositionDraft>(emptyPositionDraft);
+  const [assignmentDraft, setAssignmentDraft] = useState<AssignmentDraft>(emptyAssignmentDraft);
   const [charterDraft, setCharterDraft] = useState({
     objective: "",
     scope: "",
@@ -270,6 +341,43 @@ export default function ProjectsPage() {
   const selectedLead = profiles.find(
     (profile) => profile.id === selectedProject?.project_lead_id
   );
+  const activeProfiles = profiles.filter((profile) => profile.is_active);
+  const todayKey = toDateKey(new Date());
+  const selectedAssignmentPosition = selectedPositions.find(
+    (position) => position.id === assignmentModalPositionId
+  );
+  const editingPosition = selectedPositions.find((position) => position.id === editingPositionId);
+  const editingAssignment = assignments.find((assignment) => assignment.id === editingAssignmentId);
+  const isEditingRunningPosition = editingPosition
+    ? isRunningStaffingPeriod(editingPosition.start_date, editingPosition.end_date, todayKey)
+    : false;
+  const isEditingRunningAssignment = editingAssignment
+    ? isRunningStaffingPeriod(editingAssignment.start_date, editingAssignment.end_date, todayKey)
+    : false;
+  const assignmentEmployee = activeProfiles.find(
+    (profile) => profile.id === assignmentDraft.employeeId
+  );
+  const assignmentAllocation = normalizePercent(assignmentDraft.allocationPercent, 0);
+  const overlappingAssignmentTotal =
+    assignmentEmployee && assignmentDraft.startDate && assignmentDraft.endDate
+      ? assignments
+          .filter(
+            (assignment) =>
+              assignment.id !== editingAssignmentId &&
+              assignment.employee_id === assignmentEmployee.id &&
+              rangesOverlap(
+                assignment.start_date,
+                assignment.end_date,
+                assignmentDraft.startDate,
+                assignmentDraft.endDate
+              )
+          )
+          .reduce((sum, assignment) => sum + Number(assignment.allocation_percent), 0)
+      : 0;
+  const projectedEmployeeAllocation = overlappingAssignmentTotal + assignmentAllocation;
+  const shouldShowAllocationWarning =
+    Boolean(assignmentEmployee && assignmentDraft.startDate && assignmentDraft.endDate) &&
+    projectedEmployeeAllocation > 100;
   const projectTimesheetRows = useMemo<ProjectTimesheetRow[]>(() => {
     const weeks = createProjectWeeks(selectedTimesheetYear, selectedProject);
     const projectPositionIds = new Set(selectedPositions.map((position) => position.id));
@@ -415,40 +523,160 @@ export default function ProjectsPage() {
     await loadProjects();
   }
 
-  async function addPosition() {
+  function openPositionModal() {
+    if (!selectedProject) {
+      return;
+    }
+
+    setMessage(null);
+    setEditingPositionId(null);
+    setPositionDraft({
+      ...emptyPositionDraft,
+      startDate: selectedProject.start_date,
+      endDate: selectedProject.end_date
+    });
+    setIsPositionModalOpen(true);
+  }
+
+  function openEditPositionModal(position: Position) {
+    if (position.end_date < todayKey) {
+      setMessage("Past positions are locked for reporting integrity.");
+      return;
+    }
+
+    setMessage(null);
+    setEditingPositionId(position.id);
+    setPositionDraft({
+      title: position.title,
+      professionalGrade: position.professional_grade,
+      startDate: position.start_date,
+      endDate: position.end_date,
+      plannedAllocationPercent: String(position.planned_allocation_percent),
+      requiredSkills: position.required_skills.join(", ")
+    });
+    setIsPositionModalOpen(true);
+  }
+
+  function openAssignmentModal(position: Position) {
+    if (position.end_date < todayKey) {
+      setMessage("Past positions are locked for reporting integrity.");
+      return;
+    }
+
+    setMessage(null);
+    setEditingAssignmentId(null);
+    setAssignmentDraft({
+      employeeId: activeProfiles[0]?.id ?? "",
+      startDate: position.start_date,
+      endDate: position.end_date,
+      allocationPercent: String(position.planned_allocation_percent)
+    });
+    setAssignmentModalPositionId(position.id);
+  }
+
+  function openEditAssignmentModal(assignment: Assignment) {
+    if (assignment.end_date < todayKey) {
+      setMessage("Past assignments are locked for reporting integrity.");
+      return;
+    }
+
+    const position = positions.find((item) => item.id === assignment.project_position_id);
+
+    setMessage(null);
+    setEditingAssignmentId(assignment.id);
+    setAssignmentDraft({
+      employeeId: assignment.employee_id,
+      startDate: assignment.start_date,
+      endDate: assignment.end_date,
+      allocationPercent: String(assignment.allocation_percent)
+    });
+    setAssignmentModalPositionId(position?.id ?? assignment.project_position_id);
+  }
+
+  function closeStaffingModal() {
+    setIsPositionModalOpen(false);
+    setAssignmentModalPositionId(null);
+    setEditingPositionId(null);
+    setEditingAssignmentId(null);
+  }
+
+  async function submitPosition(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     const supabase = getSupabaseBrowserClient();
 
     if (!supabase || !selectedProject) {
       return;
     }
 
-    const title = window.prompt("Position title", "Business Analyst");
-    if (!title) {
+    const title = positionDraft.title.trim();
+    const planned = normalizePercent(positionDraft.plannedAllocationPercent, 50);
+
+    if (!title || !positionDraft.startDate || !positionDraft.endDate) {
+      setMessage("Please fill title, start date and end date.");
       return;
     }
 
-    const grade = window.prompt("Professional grade", "Senior Consultant") ?? "Consultant";
-    const startDate = window.prompt("Start date (YYYY-MM-DD)", selectedProject.start_date);
-    const endDate = window.prompt("End date (YYYY-MM-DD)", selectedProject.end_date);
-    const planned = Number(window.prompt("Planned allocation %", "50") ?? "50");
-    const skills = window.prompt("Required skills, comma separated", "Analysis, PMO") ?? "";
+    if (positionDraft.endDate < positionDraft.startDate) {
+      setMessage("End date must be on or after the start date.");
+      return;
+    }
 
-    if (!startDate || !endDate) {
+    if (editingPosition && editingPosition.end_date < todayKey) {
+      setMessage("Past positions are locked for reporting integrity.");
+      return;
+    }
+
+    if (isEditingRunningPosition && positionDraft.startDate !== editingPosition?.start_date) {
+      setMessage("Running positions keep their original start date.");
+      return;
+    }
+
+    if (isEditingRunningPosition && positionDraft.endDate < todayKey) {
+      setMessage("Running positions can only be changed for today or future dates.");
+      return;
+    }
+
+    const requiredSkills = positionDraft.requiredSkills
+      .split(",")
+      .map((skill) => skill.trim())
+      .filter(Boolean);
+
+    if (editingPosition) {
+      const assignedPercent = assignments
+        .filter((assignment) => assignment.project_position_id === editingPosition.id)
+        .reduce((sum, assignment) => sum + Number(assignment.allocation_percent), 0);
+      const { error } = await supabase
+        .from("project_positions")
+        .update({
+          title,
+          professional_grade: positionDraft.professionalGrade,
+          start_date: positionDraft.startDate,
+          end_date: positionDraft.endDate,
+          planned_allocation_percent: planned,
+          status: getStaffingStatus(assignedPercent, planned),
+          required_skills: requiredSkills
+        })
+        .eq("id", editingPosition.id);
+
+      if (error) {
+        setMessage(error.message);
+        return;
+      }
+
+      closeStaffingModal();
+      await loadProjects();
       return;
     }
 
     const { error } = await supabase.from("project_positions").insert({
       project_id: selectedProject.id,
       title,
-      professional_grade: grade,
-      start_date: startDate,
-      end_date: endDate,
-      planned_allocation_percent: Number.isNaN(planned) ? 50 : planned,
+      professional_grade: positionDraft.professionalGrade,
+      start_date: positionDraft.startDate,
+      end_date: positionDraft.endDate,
+      planned_allocation_percent: planned,
       status: "open",
-      required_skills: skills
-        .split(",")
-        .map((skill) => skill.trim())
-        .filter(Boolean)
+      required_skills: requiredSkills
     });
 
     if (error) {
@@ -456,41 +684,99 @@ export default function ProjectsPage() {
       return;
     }
 
+    closeStaffingModal();
     await loadProjects();
   }
 
-  async function addAssignment(position: Position) {
+  async function submitAssignment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     const supabase = getSupabaseBrowserClient();
 
-    if (!supabase) {
+    if (!supabase || !selectedAssignmentPosition) {
       return;
     }
 
-    const employeeEmail = window.prompt(
-      "Employee email",
-      profiles.find((profile) => profile.system_role === "employee")?.email ?? ""
+    if (!assignmentDraft.employeeId || !assignmentDraft.startDate || !assignmentDraft.endDate) {
+      setMessage("Please select an employee and assignment period.");
+      return;
+    }
+
+    if (assignmentDraft.endDate < assignmentDraft.startDate) {
+      setMessage("Assignment end date must be on or after the start date.");
+      return;
+    }
+
+    const allocation = normalizePercent(assignmentDraft.allocationPercent, 50);
+    const nextPositionAssignments = assignments
+      .filter(
+        (assignment) =>
+          assignment.project_position_id === selectedAssignmentPosition.id &&
+          assignment.id !== editingAssignmentId
+      )
+      .reduce((sum, assignment) => sum + Number(assignment.allocation_percent), 0);
+    const assignedPercent = nextPositionAssignments + allocation;
+    const nextPositionStatus = getStaffingStatus(
+      assignedPercent,
+      selectedAssignmentPosition.planned_allocation_percent
     );
-    const employee = profiles.find((profile) => profile.email === employeeEmail);
 
-    if (!employee) {
-      setMessage("Employee not found in profiles.");
+    if (editingAssignment && editingAssignment.end_date < todayKey) {
+      setMessage("Past assignments are locked for reporting integrity.");
       return;
     }
 
-    const startDate = window.prompt("Assignment start date (YYYY-MM-DD)", position.start_date);
-    const endDate = window.prompt("Assignment end date (YYYY-MM-DD)", position.end_date);
-    const allocation = Number(window.prompt("Allocation %", "50") ?? "50");
+    if (isEditingRunningAssignment && assignmentDraft.employeeId !== editingAssignment?.employee_id) {
+      setMessage("Running assignments keep their assigned employee.");
+      return;
+    }
 
-    if (!startDate || !endDate) {
+    if (isEditingRunningAssignment && assignmentDraft.startDate !== editingAssignment?.start_date) {
+      setMessage("Running assignments keep their original start date.");
+      return;
+    }
+
+    if (isEditingRunningAssignment && assignmentDraft.endDate < todayKey) {
+      setMessage("Running assignments can only be changed for today or future dates.");
+      return;
+    }
+
+    if (editingAssignment) {
+      const { error } = await supabase
+        .from("project_assignments")
+        .update({
+          employee_id: assignmentDraft.employeeId,
+          start_date: assignmentDraft.startDate,
+          end_date: assignmentDraft.endDate,
+          allocation_percent: allocation
+        })
+        .eq("id", editingAssignment.id);
+
+      if (error) {
+        setMessage(error.message);
+        return;
+      }
+
+      const { error: statusError } = await supabase
+        .from("project_positions")
+        .update({ status: nextPositionStatus })
+        .eq("id", selectedAssignmentPosition.id);
+
+      if (statusError) {
+        setMessage(statusError.message);
+        return;
+      }
+
+      closeStaffingModal();
+      await loadProjects();
       return;
     }
 
     const { error } = await supabase.from("project_assignments").insert({
-      project_position_id: position.id,
-      employee_id: employee.id,
-      start_date: startDate,
-      end_date: endDate,
-      allocation_percent: Number.isNaN(allocation) ? 50 : allocation
+      project_position_id: selectedAssignmentPosition.id,
+      employee_id: assignmentDraft.employeeId,
+      start_date: assignmentDraft.startDate,
+      end_date: assignmentDraft.endDate,
+      allocation_percent: allocation
     });
 
     if (error) {
@@ -498,23 +784,17 @@ export default function ProjectsPage() {
       return;
     }
 
-    const positionAssignments = assignments.filter(
-      (assignment) => assignment.project_position_id === position.id
-    );
-    const assignedPercent =
-      positionAssignments.reduce((sum, assignment) => sum + assignment.allocation_percent, 0) +
-      (Number.isNaN(allocation) ? 50 : allocation);
-
-    await supabase
+    const { error: statusError } = await supabase
       .from("project_positions")
-      .update({
-        status:
-          assignedPercent >= position.planned_allocation_percent
-            ? "staffed"
-            : "partially_staffed"
-      })
-      .eq("id", position.id);
+      .update({ status: nextPositionStatus })
+      .eq("id", selectedAssignmentPosition.id);
 
+    if (statusError) {
+      setMessage(statusError.message);
+      return;
+    }
+
+    closeStaffingModal();
     await loadProjects();
   }
 
@@ -766,7 +1046,7 @@ export default function ProjectsPage() {
                           <p className="section-kicker">Positions and staffing</p>
                           <h3>Planned demand and assigned people</h3>
                         </div>
-                        <button className="subtle-action" type="button" onClick={addPosition}>
+                        <button className="subtle-action" type="button" onClick={openPositionModal}>
                           <Plus size={14} />
                           Add position
                         </button>
@@ -788,11 +1068,28 @@ export default function ProjectsPage() {
                             (sum, assignment) => sum + assignment.allocation_percent,
                             0
                           );
+                          const isPositionLocked = position.end_date < todayKey;
 
                           return (
                             <div className="staffing-row" key={position.id}>
                               <div className="staffing-position">
-                                <strong>{position.title}</strong>
+                                <div className="staffing-titleline">
+                                  <strong>{position.title}</strong>
+                                  <button
+                                    aria-label={`Edit ${position.title}`}
+                                    className="row-icon-button"
+                                    disabled={isPositionLocked}
+                                    title={
+                                      isPositionLocked
+                                        ? "Past positions are locked"
+                                        : "Edit position"
+                                    }
+                                    type="button"
+                                    onClick={() => openEditPositionModal(position)}
+                                  >
+                                    <Pencil size={13} />
+                                  </button>
+                                </div>
                                 <span>{position.professional_grade}</span>
                                 <div className="staffing-skillline">
                                   {position.required_skills.map((skill) => (
@@ -817,6 +1114,7 @@ export default function ProjectsPage() {
                                     const employee = profiles.find(
                                       (profile) => profile.id === assignment.employee_id
                                     );
+                                    const isAssignmentLocked = assignment.end_date < todayKey;
 
                                     return (
                                       <div
@@ -829,6 +1127,20 @@ export default function ProjectsPage() {
                                           {formatDate(assignment.end_date)}
                                         </span>
                                         <i>{assignment.allocation_percent}%</i>
+                                        <button
+                                          aria-label={`Edit assignment for ${employee?.full_name ?? "Unknown"}`}
+                                          className="row-icon-button"
+                                          disabled={isAssignmentLocked}
+                                          title={
+                                            isAssignmentLocked
+                                              ? "Past assignments are locked"
+                                              : "Edit assignment"
+                                          }
+                                          type="button"
+                                          onClick={() => openEditAssignmentModal(assignment)}
+                                        >
+                                          <Pencil size={12} />
+                                        </button>
                                       </div>
                                     );
                                   })
@@ -840,8 +1152,14 @@ export default function ProjectsPage() {
                                 )}
                                 <button
                                   className="assignment-add-button"
+                                  disabled={isPositionLocked}
+                                  title={
+                                    isPositionLocked
+                                      ? "Past positions are locked"
+                                      : "Add assignment"
+                                  }
                                   type="button"
-                                  onClick={() => addAssignment(position)}
+                                  onClick={() => openAssignmentModal(position)}
                                 >
                                   <Plus size={13} />
                                   Add assignment
@@ -981,6 +1299,230 @@ export default function ProjectsPage() {
           </section>
         )}
       </div>
+
+      {isPositionModalOpen ? (
+        <div className="modal-backdrop" role="presentation">
+          <form className="staffing-modal" onSubmit={submitPosition}>
+            <div className="modal-header">
+              <div>
+                <p className="section-kicker">Staffing demand</p>
+                <h3>{editingPosition ? "Edit position" : "Add position"}</h3>
+              </div>
+              <button
+                aria-label="Close position modal"
+                className="icon-button"
+                type="button"
+                onClick={closeStaffingModal}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="staffing-form-grid">
+              <label className="field-group wide">
+                <span>Position title</span>
+                <input
+                  required
+                  placeholder="Business Analyst"
+                  value={positionDraft.title}
+                  onChange={(event) =>
+                    setPositionDraft((draft) => ({ ...draft, title: event.target.value }))
+                  }
+                />
+              </label>
+
+              <label className="field-group">
+                <span>Professional grade</span>
+                <input
+                  required
+                  placeholder="Senior Consultant"
+                  value={positionDraft.professionalGrade}
+                  onChange={(event) =>
+                    setPositionDraft((draft) => ({
+                      ...draft,
+                      professionalGrade: event.target.value
+                    }))
+                  }
+                />
+              </label>
+
+              <label className="field-group">
+                <span>Planned allocation</span>
+                <input
+                  required
+                  min="0"
+                  step="5"
+                  type="number"
+                  value={positionDraft.plannedAllocationPercent}
+                  onChange={(event) =>
+                    setPositionDraft((draft) => ({
+                      ...draft,
+                      plannedAllocationPercent: event.target.value
+                    }))
+                  }
+                />
+              </label>
+
+              <label className="field-group">
+                <span>Start date</span>
+                <input
+                  required
+                  disabled={isEditingRunningPosition}
+                  type="date"
+                  value={positionDraft.startDate}
+                  onChange={(event) =>
+                    setPositionDraft((draft) => ({ ...draft, startDate: event.target.value }))
+                  }
+                />
+              </label>
+
+              <label className="field-group">
+                <span>End date</span>
+                <input
+                  required
+                  min={isEditingRunningPosition ? todayKey : undefined}
+                  type="date"
+                  value={positionDraft.endDate}
+                  onChange={(event) =>
+                    setPositionDraft((draft) => ({ ...draft, endDate: event.target.value }))
+                  }
+                />
+              </label>
+
+              <label className="field-group wide">
+                <span>Required skills</span>
+                <input
+                  placeholder="Analysis, PMO"
+                  value={positionDraft.requiredSkills}
+                  onChange={(event) =>
+                    setPositionDraft((draft) => ({
+                      ...draft,
+                      requiredSkills: event.target.value
+                    }))
+                  }
+                />
+              </label>
+            </div>
+
+            <div className="modal-actions">
+              <button className="subtle-action" type="button" onClick={closeStaffingModal}>
+                Cancel
+              </button>
+              <button className="submit-timesheet-button" type="submit">
+                {editingPosition ? <Save size={14} /> : <Plus size={14} />}
+                {editingPosition ? "Save position" : "Create position"}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
+
+      {selectedAssignmentPosition ? (
+        <div className="modal-backdrop" role="presentation">
+          <form className="staffing-modal" onSubmit={submitAssignment}>
+            <div className="modal-header">
+              <div>
+                <p className="section-kicker">{selectedAssignmentPosition.title}</p>
+                <h3>{editingAssignment ? "Edit assignment" : "Add assignment"}</h3>
+              </div>
+              <button
+                aria-label="Close assignment modal"
+                className="icon-button"
+                type="button"
+                onClick={closeStaffingModal}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="staffing-form-grid">
+              <label className="field-group wide">
+                <span>Employee</span>
+                <select
+                  required
+                  disabled={isEditingRunningAssignment}
+                  value={assignmentDraft.employeeId}
+                  onChange={(event) =>
+                    setAssignmentDraft((draft) => ({
+                      ...draft,
+                      employeeId: event.target.value
+                    }))
+                  }
+                >
+                  {activeProfiles.map((profile) => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.full_name ?? profile.email} - {profile.professional_grade ?? profile.system_role}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="field-group">
+                <span>Allocation</span>
+                <input
+                  required
+                  min="0"
+                  step="5"
+                  type="number"
+                  value={assignmentDraft.allocationPercent}
+                  onChange={(event) =>
+                    setAssignmentDraft((draft) => ({
+                      ...draft,
+                      allocationPercent: event.target.value
+                    }))
+                  }
+                />
+              </label>
+
+              <label className="field-group">
+                <span>Start date</span>
+                <input
+                  required
+                  disabled={isEditingRunningAssignment}
+                  type="date"
+                  value={assignmentDraft.startDate}
+                  onChange={(event) =>
+                    setAssignmentDraft((draft) => ({ ...draft, startDate: event.target.value }))
+                  }
+                />
+              </label>
+
+              <label className="field-group">
+                <span>End date</span>
+                <input
+                  required
+                  min={isEditingRunningAssignment ? todayKey : undefined}
+                  type="date"
+                  value={assignmentDraft.endDate}
+                  onChange={(event) =>
+                    setAssignmentDraft((draft) => ({ ...draft, endDate: event.target.value }))
+                  }
+                />
+              </label>
+            </div>
+
+            {shouldShowAllocationWarning ? (
+              <div className="staffing-warning staffing-warning-wide">
+                <AlertTriangle size={15} />
+                <span>
+                  Projected allocation for {assignmentEmployee?.full_name}:{" "}
+                  {projectedEmployeeAllocation}%
+                </span>
+              </div>
+            ) : null}
+
+            <div className="modal-actions">
+              <button className="subtle-action" type="button" onClick={closeStaffingModal}>
+                Cancel
+              </button>
+              <button className="submit-timesheet-button" type="submit">
+                {editingAssignment ? <Save size={14} /> : <Plus size={14} />}
+                {editingAssignment ? "Save assignment" : "Create assignment"}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
     </AppShell>
   );
 }

@@ -254,7 +254,7 @@ export function AppShell({ children, title, eyebrow = "XC Projector Demo" }: App
       return;
     }
 
-    window.location.href = pathname ?? "/dashboard";
+    window.location.href = "/dashboard";
   }
 
   if (isLoading) {

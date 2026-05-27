@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -77,6 +77,14 @@ type TimeEntryRow = {
   description: string;
   assignmentId?: string;
   internalAccountId?: string;
+};
+
+type EntryDraftState = "clean" | "dirty" | "saving" | "saved" | "error";
+
+type EntryDraft = {
+  hours: string;
+  description: string;
+  state: EntryDraftState;
 };
 
 type TimesheetWeek = {
@@ -160,7 +168,7 @@ function getWeekStatus(timesheet: WeeklyTimesheet | undefined, booked: number): 
     return "Submitted";
   }
 
-  if (booked === targetHours) {
+  if (booked >= targetHours) {
     return "Ready";
   }
 
@@ -201,6 +209,15 @@ const weekSignalClass: Record<WeekSignal, string> = {
   future: "neutral"
 };
 
+function getDraftKey(weekStartDate: string, rowId: string) {
+  return `${weekStartDate}:${rowId}`;
+}
+
+function normalizeHours(value: string) {
+  const hours = Number(value);
+  return Number.isNaN(hours) ? 0 : hours;
+}
+
 export default function TimesheetsPage() {
   const currentYear = new Date().getFullYear();
   const [employeeId, setEmployeeId] = useState<string | null>(null);
@@ -219,6 +236,7 @@ export default function TimesheetsPage() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [selectedAdditionalAccountId, setSelectedAdditionalAccountId] = useState("");
+  const [entryDrafts, setEntryDrafts] = useState<Record<string, EntryDraft>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -311,6 +329,7 @@ export default function TimesheetsPage() {
   const selectedTimesheet = timesheets.find(
     (timesheet) => timesheet.week_start_date === selectedWeek.startDate
   );
+  const isSubmitted = selectedTimesheet?.status === "submitted";
 
   const selectedWeekEntries = useMemo(() => {
     if (!selectedWeek) {
@@ -369,17 +388,53 @@ export default function TimesheetsPage() {
     return [...projectRows, ...internalRows];
   }, [assignments, internalAccounts, positions, projects, selectedTimesheet?.id, selectedWeek, timeEntries]);
 
+  useEffect(() => {
+    setEntryDrafts((current) => {
+      const next = { ...current };
+
+      selectedWeekEntries.forEach((entry) => {
+        const key = getDraftKey(selectedWeek.startDate, entry.rowId);
+        const currentDraft = next[key];
+
+        if (!currentDraft || currentDraft.state === "clean") {
+          next[key] = {
+            hours: String(entry.hours),
+            description: entry.description,
+            state: "clean"
+          };
+        }
+      });
+
+      return next;
+    });
+  }, [selectedWeek.startDate, selectedWeekEntries]);
+
+  const editableWeekEntries = useMemo(() => {
+    return selectedWeekEntries.map((entry) => {
+      const draft = entryDrafts[getDraftKey(selectedWeek.startDate, entry.rowId)];
+
+      return {
+        ...entry,
+        hours: normalizeHours(draft?.hours ?? String(entry.hours)),
+        description: draft?.description ?? entry.description,
+        draftHours: draft?.hours ?? String(entry.hours),
+        draftDescription: draft?.description ?? entry.description,
+        draftState: draft?.state ?? "clean"
+      };
+    });
+  }, [entryDrafts, selectedWeek.startDate, selectedWeekEntries]);
+
   const additionalInternalAccounts = internalAccounts.filter((account) => !account.is_default);
   const totals = useMemo(() => {
-    const booked = selectedWeekEntries.reduce((sum, entry) => sum + Number(entry.hours), 0);
+    const booked = editableWeekEntries.reduce((sum, entry) => sum + Number(entry.hours), 0);
     const remaining = Number(selectedWeek?.targetHours ?? targetHours) - booked;
 
     return {
       booked,
       remaining,
-      isComplete: remaining === 0
+      isComplete: remaining <= 0
     };
-  }, [selectedWeek?.targetHours, selectedWeekEntries]);
+  }, [editableWeekEntries, selectedWeek?.targetHours]);
 
   async function ensureTimesheet() {
     const supabase = getSupabaseBrowserClient();
@@ -409,11 +464,15 @@ export default function TimesheetsPage() {
   }
 
   async function upsertEntry(row: TimeEntryRow, patch: Partial<Pick<DbTimeEntry, "hours" | "description">>) {
+    if (isSubmitted) {
+      return false;
+    }
+
     const supabase = getSupabaseBrowserClient();
     const timesheet = await ensureTimesheet();
 
     if (!supabase || !timesheet) {
-      return;
+      return false;
     }
 
     setMessage(null);
@@ -428,13 +487,13 @@ export default function TimesheetsPage() {
 
       if (error) {
         setMessage(error.message);
-        return;
+        return false;
       }
 
       setTimeEntries((current) =>
         current.map((entry) => (entry.id === row.dbId ? (data as DbTimeEntry) : entry))
       );
-      return;
+      return true;
     }
 
     const { data, error } = await supabase
@@ -452,10 +511,64 @@ export default function TimesheetsPage() {
 
     if (error) {
       setMessage(error.message);
-      return;
+      return false;
     }
 
     setTimeEntries((current) => [...current, data as DbTimeEntry]);
+    return true;
+  }
+
+  function updateDraft(row: TimeEntryRow, patch: Partial<Pick<EntryDraft, "hours" | "description">>) {
+    const key = getDraftKey(selectedWeek.startDate, row.rowId);
+
+    setEntryDrafts((current) => ({
+      ...current,
+      [key]: {
+        hours: patch.hours ?? current[key]?.hours ?? String(row.hours),
+        description: patch.description ?? current[key]?.description ?? row.description,
+        state: "dirty"
+      }
+    }));
+  }
+
+  async function saveDraft(row: TimeEntryRow) {
+    const key = getDraftKey(selectedWeek.startDate, row.rowId);
+    const draft = entryDrafts[key];
+
+    if (!draft || draft.state !== "dirty" || isSubmitted) {
+      return;
+    }
+
+    setEntryDrafts((current) => ({
+      ...current,
+      [key]: { ...draft, state: "saving" }
+    }));
+
+    const isSaved = await upsertEntry(row, {
+      hours: normalizeHours(draft.hours),
+      description: draft.description
+    });
+
+    setEntryDrafts((current) => ({
+      ...current,
+      [key]: {
+        hours: draft.hours,
+        description: draft.description,
+        state: isSaved ? "saved" : "error"
+      }
+    }));
+  }
+
+  async function saveDraftOnEnter(
+    event: KeyboardEvent<HTMLInputElement>,
+    row: TimeEntryRow
+  ) {
+    if (event.key !== "Enter") {
+      return;
+    }
+
+    event.preventDefault();
+    await saveDraft(row);
   }
 
   function handleYearChange(year: number) {
@@ -467,7 +580,7 @@ export default function TimesheetsPage() {
   async function addAdditionalInternalRow() {
     const account = internalAccounts.find((item) => item.id === selectedAdditionalAccountId);
 
-    if (!account) {
+    if (!account || isSubmitted) {
       return;
     }
 
@@ -490,7 +603,7 @@ export default function TimesheetsPage() {
     const supabase = getSupabaseBrowserClient();
     const timesheet = await ensureTimesheet();
 
-    if (!supabase || !timesheet || !totals.isComplete) {
+    if (!supabase || !timesheet || !totals.isComplete || isSubmitted) {
       return;
     }
 
@@ -514,7 +627,7 @@ export default function TimesheetsPage() {
   async function resetWeek() {
     const supabase = getSupabaseBrowserClient();
 
-    if (!supabase || !selectedTimesheet) {
+    if (!supabase || !selectedTimesheet || isSubmitted) {
       return;
     }
 
@@ -531,6 +644,13 @@ export default function TimesheetsPage() {
     setTimeEntries((current) =>
       current.filter((entry) => entry.weekly_timesheet_id !== selectedTimesheet.id)
     );
+    setEntryDrafts((current) => {
+      const next = { ...current };
+      selectedWeekEntries.forEach((entry) => {
+        delete next[getDraftKey(selectedWeek.startDate, entry.rowId)];
+      });
+      return next;
+    });
   }
 
   if (isLoading) {
@@ -659,7 +779,7 @@ export default function TimesheetsPage() {
                       className="subtle-action"
                       type="button"
                       onClick={addAdditionalInternalRow}
-                      disabled={!selectedAdditionalAccountId}
+                      disabled={!selectedAdditionalAccountId || isSubmitted}
                     >
                       <Plus size={14} />
                       Add row
@@ -674,9 +794,10 @@ export default function TimesheetsPage() {
                     <span>Planned</span>
                     <span>Hours</span>
                     <span>Description</span>
+                    <span>Save</span>
                   </div>
 
-                  {selectedWeekEntries.map((entry) => (
+                  {editableWeekEntries.map((entry) => (
                     <div className="timesheet-grid-row" key={entry.rowId}>
                       <div className="entry-type">
                         <i className={entry.type === "Project" ? "success" : "warning"} />
@@ -695,30 +816,42 @@ export default function TimesheetsPage() {
                       <label className="entry-hours">
                         <input
                           aria-label={`${entry.label} hours`}
+                          disabled={isSubmitted}
                           min="0"
                           step="0.25"
                           type="number"
-                          value={entry.hours}
-                          onChange={(event) =>
-                            upsertEntry(entry, {
-                              hours: Number.isNaN(Number(event.target.value))
-                                ? 0
-                                : Number(event.target.value)
-                            })
-                          }
+                          value={entry.draftHours}
+                          onBlur={() => saveDraft(entry)}
+                          onChange={(event) => updateDraft(entry, { hours: event.target.value })}
+                          onKeyDown={(event) => saveDraftOnEnter(event, entry)}
                         />
                       </label>
 
                       <label className="entry-description">
                         <input
                           aria-label={`${entry.label} description`}
+                          disabled={isSubmitted}
                           placeholder="Short note"
-                          value={entry.description}
+                          value={entry.draftDescription}
+                          onBlur={() => saveDraft(entry)}
                           onChange={(event) =>
-                            upsertEntry(entry, { description: event.target.value })
+                            updateDraft(entry, { description: event.target.value })
                           }
+                          onKeyDown={(event) => saveDraftOnEnter(event, entry)}
                         />
                       </label>
+
+                      <span className={`entry-save-state ${entry.draftState}`}>
+                        {entry.draftState === "dirty"
+                          ? "Unsaved"
+                          : entry.draftState === "saving"
+                            ? "Saving"
+                            : entry.draftState === "saved"
+                              ? "Saved"
+                              : entry.draftState === "error"
+                                ? "Error"
+                                : ""}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -751,7 +884,7 @@ export default function TimesheetsPage() {
                     className="subtle-action"
                     type="button"
                     onClick={resetWeek}
-                    disabled={!selectedTimesheet}
+                    disabled={!selectedTimesheet || isSubmitted}
                   >
                     <TimerReset size={14} />
                     Reset
@@ -759,7 +892,7 @@ export default function TimesheetsPage() {
                   <button
                     className="submit-timesheet-button"
                     type="button"
-                    disabled={!totals.isComplete || selectedTimesheet?.status === "submitted"}
+                    disabled={!totals.isComplete || isSubmitted}
                     onClick={submitWeek}
                   >
                     <Send size={14} />
